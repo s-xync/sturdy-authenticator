@@ -10,14 +10,16 @@ const UserSession = require("../models/userSession");
 
 const saltRounds = 10;
 const secretLength = 20;
+const jwtExpiresIn = "1d"; // 1 day
 
 const authenticationRouter = express.Router();
 
 /**
  * POST signup
  * POST signin
- * POST getsession
- * POST forget
+ * GET session
+ * POST logout
+ * POST forgot
  * POST reset
  */
 
@@ -155,7 +157,7 @@ authenticationRouter.post(
               jwt.sign(
                 { name, email },
                 secret,
-                { expiresIn: "1d" },
+                { expiresIn: jwtExpiresIn },
                 (err, token) => {
                   if (err) {
                     console.log(err);
@@ -190,6 +192,7 @@ authenticationRouter.post(
                          * client will get the json web token(jwt)
                          * client can save the jwt to the localStorage
                          * client can request the protected routes using jwt
+                         * client has to attach the jwt to request headers
                          * client can maintain the session using jwt
                          */
                       }
@@ -216,5 +219,87 @@ authenticationRouter.post(
     });
   }
 );
+
+// GET PUBLIC_URL/api/authentication/session
+authenticationRouter.get("/session", verifyToken, (req, res) => {
+  const { token } = req;
+  const query = {
+    token
+  };
+  UserSession.find(query, (err, userSessions) => {
+    if (err) {
+      console.log(err);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal server error"
+      });
+    } else if (userSessions.length != 1) {
+      // session does not exist
+      return res.status(HttpStatus.FORBIDDEN).json({
+        success: false,
+        message: "Session not found"
+      });
+      /**
+       * client can clear the token saved in localStorage
+       * client can redirect to login page for new session creation
+       */
+    } else {
+      const { secret } = userSessions[0];
+      jwt.verify(token, secret, (err, authData) => {
+        if (err) {
+          if (err.name === "TokenExpiredError") {
+            // token expired
+            // remove the session from the database
+            UserSession.find(query)
+              .remove()
+              .exec();
+            return res.status(HttpStatus.FORBIDDEN).json({
+              success: false,
+              message: "Session expired"
+            });
+            /**
+             * client can clear the token saved in localStorage
+             * client can redirect to login page for new session creation
+             */
+          } else {
+            console.log(err);
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+              success: false,
+              message: "Internal server error"
+            });
+          }
+        } else {
+          const { name, email } = authData;
+          return res.status(HttpStatus.OK).json({
+            success: true,
+            message: "Session retrieved",
+            userDetails: {
+              name,
+              email
+            }
+          });
+        }
+      });
+    }
+  });
+});
+
+function verifyToken(req, res, next) {
+  // check if token exists and attach it to request object directly
+  // client will attach the jwt to request headers
+  const authHeader = req.headers["authorization"];
+  if (typeof authHeader !== "undefined") {
+    const auth = authHeader.split(" ");
+    req.token = auth[1];
+    // call next middleware
+    next();
+  } else {
+    // authorization header not defined
+    return res.status(HttpStatus.FORBIDDEN).json({
+      success: false,
+      message: "Authorization header undefined"
+    });
+  }
+}
 
 module.exports = authenticationRouter;
