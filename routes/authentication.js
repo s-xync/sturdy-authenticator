@@ -19,12 +19,66 @@ const fptExpiresIn = "1h"; // 1 hour
 const authenticationRouter = express.Router();
 
 /**
- * POST signup
- * POST signin
- * GET session
- * POST logout
- * POST forgotpassword
- * POST resetpassword
+ * signup --> registering a user
+ *
+ * signin --> user new login
+ *
+ * session --> user session login
+ *
+ * logout --> user logout
+ *
+ * forgotpassword --> session for resetpassword
+ *
+ * resetpassword --> reset password of a user using forgot password session
+ */
+
+/**
+ * signup --> POST
+ *
+ * headers --> none
+ * body --> email, name, password
+ * return --> success / failure
+ */
+
+/**
+ * signin --> POST
+ *
+ * headers --> none
+ * body --> email, password
+ * return --> success / failure, userDetails, jwt(session)
+ *
+ */
+
+/**
+ * session --> GET
+ *
+ * headers --> jwt
+ * body --> none
+ * return --> success / failure, userDetails
+ */
+
+/**
+ * logout --> POST
+ *
+ * headers --> jwt
+ * body --> none
+ * return --> success / failure
+ */
+
+/**
+ * forgotpassword --> POST
+ *
+ * headers --> none
+ * body --> email
+ * return --> jwt(forgot password session)
+ */
+
+/**
+ * resetpassword --> POST
+ *
+ * headers --> jwt
+ * body --> password
+ * return --> success / failure
  */
 
 // POST PUBLIC_URL/api/authentication/signup

@@ -38,9 +38,11 @@ const server = app.listen(app.get("port"), () => {
   console.log(`Process Name: ${process.title}`);
 });
 
+// ***********************************************************************
 // routes for authenticate api
 const authenticationRouter = require("./routes/authentication");
 app.use("/api/authentication", authenticationRouter);
+// ***********************************************************************
 
 // if not matched with any of the above end points
 app.get("*", (req, res) => {
