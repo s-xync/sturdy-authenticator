@@ -7,10 +7,14 @@ const randomatic = require("randomatic");
 
 const User = require("../models/user.js");
 const UserSession = require("../models/userSession");
+const ForgotPasswordSession = require("../models/forgotPasswordSession");
 
 const saltRounds = 10;
 const secretLength = 20;
+// json web token expires after
 const jwtExpiresIn = "1d"; // 1 day
+// forgot password jwt expires after
+const fptExpiresIn = "1h"; // 1 hour
 
 const authenticationRouter = express.Router();
 
@@ -19,8 +23,8 @@ const authenticationRouter = express.Router();
  * POST signin
  * GET session
  * POST logout
- * POST forgot
- * POST reset
+ * POST forgotpassword
+ * POST resetpassword
  */
 
 // POST PUBLIC_URL/api/authentication/signup
@@ -328,5 +332,92 @@ authenticationRouter.post("/logout", verifyToken, (req, res) => {
     }
   });
 });
+
+// POST PUBLIC_URL/api/authentication/forgotpassword
+authenticationRouter.post(
+  "/forgotpassword",
+  [
+    // email must exist
+    check("email").exists()
+  ],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      let errorString = "";
+      errors.array().forEach((item, index) => {
+        errorString = errorString.concat(" " + item.param);
+      });
+      // returns which values have been violated
+      return res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
+        success: false,
+        message: "Check" + errorString
+      });
+    }
+
+    const { email } = req.body;
+    const query = {
+      email
+    };
+    User.find(query, (err, users) => {
+      if (err) {
+        console.log(err);
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          success: false,
+          message: "Internal server error"
+        });
+      } else if (users.length != 1) {
+        // email does not exist
+        return res.status(HttpStatus.FORBIDDEN).json({
+          success: false,
+          message: "Email incorrect"
+        });
+      } else {
+        const { name, email } = users[0];
+        // create a secret which is a random string
+        const secret = randomatic("*", secretLength);
+        jwt.sign(
+          { email },
+          secret,
+          { expiresIn: fptExpiresIn },
+          (err, token) => {
+            if (err) {
+              console.log(err);
+              return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: "Internal server error"
+              });
+            } else {
+              //save the token and the secret to database
+              const newFpSession = { token, secret };
+              ForgotPasswordSession.create(newFpSession, (err, fpSession) => {
+                if (err) {
+                  console.log(err);
+                  return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                    success: false,
+                    message: "Internal server error"
+                  });
+                } else {
+                  // this process should generally be email based
+                  // we can use mailgun api to directly send email with a link
+                  // we do it manually for now
+                  return res.status(HttpStatus.OK).json({
+                    success: true,
+                    message: "Forgot password session created successfully",
+                    fpToken: token
+                  });
+                  /**
+                   * server can send an email to the user with forgot password token
+                   * user can visit the link to reset password
+                   * forgot password token will be used to authenticate reset password
+                   */
+                }
+              });
+            }
+          }
+        );
+      }
+    });
+  }
+);
 
 module.exports = authenticationRouter;
