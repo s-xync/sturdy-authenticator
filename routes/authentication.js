@@ -220,6 +220,24 @@ authenticationRouter.post(
   }
 );
 
+function verifyToken(req, res, next) {
+  // check if token exists and attach it to request object directly
+  // client will attach the jwt to request headers
+  const authHeader = req.headers["authorization"];
+  if (typeof authHeader !== "undefined") {
+    const auth = authHeader.split(" ");
+    req.token = auth[1];
+    // call next middleware
+    next();
+  } else {
+    // authorization header not defined
+    return res.status(HttpStatus.FORBIDDEN).json({
+      success: false,
+      message: "Authorization header undefined"
+    });
+  }
+}
+
 // GET PUBLIC_URL/api/authentication/session
 authenticationRouter.get("/session", verifyToken, (req, res) => {
   const { token } = req;
@@ -284,22 +302,31 @@ authenticationRouter.get("/session", verifyToken, (req, res) => {
   });
 });
 
-function verifyToken(req, res, next) {
-  // check if token exists and attach it to request object directly
-  // client will attach the jwt to request headers
-  const authHeader = req.headers["authorization"];
-  if (typeof authHeader !== "undefined") {
-    const auth = authHeader.split(" ");
-    req.token = auth[1];
-    // call next middleware
-    next();
-  } else {
-    // authorization header not defined
-    return res.status(HttpStatus.FORBIDDEN).json({
-      success: false,
-      message: "Authorization header undefined"
-    });
-  }
-}
+// POST PUBLIC_URL/api/authentication/logout
+authenticationRouter.post("/logout", verifyToken, (req, res) => {
+  const { token } = req;
+  const query = {
+    token
+  };
+  UserSession.find(query).remove(err => {
+    if (err) {
+      console.log(err);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal server error"
+      });
+    } else {
+      // deleted session
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        message: "User successfully logged out"
+      });
+      /**
+       * client can clear the token saved in localStorage
+       * client can redirect to login page for new session creation
+       */
+    }
+  });
+});
 
 module.exports = authenticationRouter;
