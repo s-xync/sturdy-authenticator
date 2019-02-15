@@ -56,7 +56,7 @@ authenticationRouter.post(
     name = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
     email = email.toLowerCase();
     // convert the password into a hash
-    const passwordHash = bcrypt
+    bcrypt
       .hash(password, saltRounds)
       .then(passwordHash => {
         // checking if the email already exists in the database
@@ -415,6 +415,135 @@ authenticationRouter.post(
             }
           }
         );
+      }
+    });
+  }
+);
+
+// POST PUBLIC_URL/api/authentication/resetpassword
+authenticationRouter.post(
+  "/resetpassword",
+  verifyToken,
+  [
+    // password must have atleast 6 characters
+    check("password").isLength({ min: 6 })
+  ],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      let errorString = "";
+      errors.array().forEach((item, index) => {
+        errorString = errorString.concat(" " + item.param);
+      });
+      // returns which values have been violated
+      return res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
+        success: false,
+        message: "Check" + errorString
+      });
+    }
+
+    const { password } = req.body;
+    const { token } = req;
+    const query = {
+      token
+    };
+    ForgotPasswordSession.find(query, (err, fpSessions) => {
+      if (err) {
+        console.log(err);
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          success: false,
+          message: "Internal server error"
+        });
+      } else if (fpSessions.length != 1) {
+        // session does not exist
+        return res.status(HttpStatus.FORBIDDEN).json({
+          success: false,
+          message: "Session not found"
+        });
+      } else {
+        const { secret } = fpSessions[0];
+        jwt.verify(token, secret, (err, authData) => {
+          if (err) {
+            if (err.name === "TokenExpiredError") {
+              // token expired
+              // remove the session from the database
+              ForgotPasswordSession.find(query)
+                .remove()
+                .exec();
+              return res.status(HttpStatus.FORBIDDEN).json({
+                success: false,
+                message: "Session expired"
+              });
+            } else {
+              console.log(err);
+              return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: "Internal server error"
+              });
+            }
+          } else {
+            const { email } = authData;
+            const query = {
+              email
+            };
+            User.find(query, (err, users) => {
+              if (err) {
+                console.log(err);
+                return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                  success: false,
+                  message: "Internal server error"
+                });
+              } else if (users.length != 1) {
+                // email does not exist
+                return res.status(HttpStatus.FORBIDDEN).json({
+                  success: false,
+                  message: "Email incorrect"
+                });
+              } else {
+                let retrievedUser = users[0];
+                bcrypt
+                  .hash(password, saltRounds)
+                  .then(passwordHash => {
+                    retrievedUser.passwordHash = passwordHash;
+                    retrievedUser.save(err => {
+                      if (err) {
+                        console.log(err);
+                        return res
+                          .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                          .json({
+                            success: false,
+                            message: "Internal server error"
+                          });
+                      } else {
+                        // password updated
+                        // remove the forgot password session from the database
+                        const query = {
+                          token
+                        };
+                        ForgotPasswordSession.find(query)
+                          .remove()
+                          .exec();
+                        return res.status(HttpStatus.OK).json({
+                          success: true,
+                          message: "Password updated successfully"
+                        });
+                        /**
+                         * client can redirect to signin page
+                         */
+                      }
+                    });
+                  })
+                  .catch(err => {
+                    console.log(err);
+                    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                      success: false,
+                      message: "Internal server error"
+                    });
+                  });
+              }
+            });
+          }
+        });
       }
     });
   }
