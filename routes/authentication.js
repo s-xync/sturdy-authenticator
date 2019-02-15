@@ -104,93 +104,117 @@ authenticationRouter.post(
 );
 
 // POST PUBLIC_URL/api/authentication/signin
-authenticationRouter.post("/signin", (req, res) => {
-  const { email, password } = req.body;
-  const query = {
-    email
-  };
-  User.find(query, (err, users) => {
-    if (err) {
-      console.log(err);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal server error"
+authenticationRouter.post(
+  "/signin",
+  [
+    // email must exist
+    check("email").exists(),
+    // password must exist
+    check("password").exists()
+  ],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      let errorString = "";
+      errors.array().forEach((item, index) => {
+        errorString = errorString.concat(" " + item.param);
       });
-    } else if (users.length != 1) {
-      // email does not exist
-      return res.status(HttpStatus.FORBIDDEN).json({
+      // returns which values have been violated
+      return res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
         success: false,
-        message: "Email incorrect"
+        message: "Check" + errorString
       });
-    } else {
-      const { name, email, passwordHash } = users[0];
-      bcrypt
-        .compare(password, passwordHash)
-        .then(result => {
-          if (result) {
-            // correct password
-            // create a secret which is a random string
-            const secret = randomatic("*", secretLength);
-            jwt.sign(
-              { name, email },
-              secret,
-              { expiresIn: "1d" },
-              (err, token) => {
-                if (err) {
-                  console.log(err);
-                  return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-                    success: false,
-                    message: "Internal server error"
-                  });
-                } else {
-                  //save the token and the secret to database
-                  const newUserSession = { token, secret };
-                  UserSession.create(newUserSession, (err, userSession) => {
-                    if (err) {
-                      console.log(err);
-                      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-                        success: false,
-                        message: "Internal server error"
-                      });
-                    } else {
-                      return res.status(HttpStatus.OK).json({
-                        success: true,
-                        message: "User successfully signed in",
-                        jsonwebtoken: token,
-                        userDetails: {
-                          name,
-                          email
-                        }
-                      });
-                      /**
-                       * client will get the user details
-                       * client will get the json web token(jwt)
-                       * client can save the jwt to the localStorage
-                       * client can request the protected routes using jwt
-                       * client can maintain the session using jwt
-                       */
-                    }
-                  });
-                }
-              }
-            );
-          } else {
-            // wrong password
-            return res.status(HttpStatus.FORBIDDEN).json({
-              success: false,
-              message: "Password incorrect"
-            });
-          }
-        })
-        .catch(err => {
-          console.log(err);
-          return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-            success: false,
-            message: "Internal server error"
-          });
-        });
     }
-  });
-});
+
+    const { email, password } = req.body;
+    const query = {
+      email
+    };
+    User.find(query, (err, users) => {
+      if (err) {
+        console.log(err);
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          success: false,
+          message: "Internal server error"
+        });
+      } else if (users.length != 1) {
+        // email does not exist
+        return res.status(HttpStatus.FORBIDDEN).json({
+          success: false,
+          message: "Email incorrect"
+        });
+      } else {
+        const { name, email, passwordHash } = users[0];
+        bcrypt
+          .compare(password, passwordHash)
+          .then(result => {
+            if (result) {
+              // correct password
+              // create a secret which is a random string
+              const secret = randomatic("*", secretLength);
+              jwt.sign(
+                { name, email },
+                secret,
+                { expiresIn: "1d" },
+                (err, token) => {
+                  if (err) {
+                    console.log(err);
+                    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                      success: false,
+                      message: "Internal server error"
+                    });
+                  } else {
+                    //save the token and the secret to database
+                    const newUserSession = { token, secret };
+                    UserSession.create(newUserSession, (err, userSession) => {
+                      if (err) {
+                        console.log(err);
+                        return res
+                          .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                          .json({
+                            success: false,
+                            message: "Internal server error"
+                          });
+                      } else {
+                        return res.status(HttpStatus.OK).json({
+                          success: true,
+                          message: "User successfully signed in",
+                          jsonwebtoken: token,
+                          userDetails: {
+                            name,
+                            email
+                          }
+                        });
+                        /**
+                         * client will get the user details
+                         * client will get the json web token(jwt)
+                         * client can save the jwt to the localStorage
+                         * client can request the protected routes using jwt
+                         * client can maintain the session using jwt
+                         */
+                      }
+                    });
+                  }
+                }
+              );
+            } else {
+              // wrong password
+              return res.status(HttpStatus.FORBIDDEN).json({
+                success: false,
+                message: "Password incorrect"
+              });
+            }
+          })
+          .catch(err => {
+            console.log(err);
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+              success: false,
+              message: "Internal server error"
+            });
+          });
+      }
+    });
+  }
+);
 
 module.exports = authenticationRouter;
