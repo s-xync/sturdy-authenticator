@@ -1,0 +1,13 @@
+{
+  "name": "sturdy-authenticator",
+  "version": "1.0.0",
+  "main": "server.js",
+  "repository": "https://github.com/s-xync/sturdy-authenticator.git",
+  "author": "SaiKumar Immadi <immadisaikumar@ymail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.16.4",
+    "jsonwebtoken": "^8.4.0",
+    "mongoose": "^5.4.12"
+  }
+}

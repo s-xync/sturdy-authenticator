@@ -1,0 +1,43 @@
+Arguments: 
+  /usr/bin/node /usr/local/bin/yarn add express mongoose javascriptwebtoken
+
+PATH: 
+  /home/saikumar/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+
+Yarn version: 
+  1.12.1
+
+Node version: 
+  8.10.0
+
+Platform: 
+  linux x64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/javascriptwebtoken: Not found
+      at Request.params.callback [as _callback] (/usr/local/lib/node_modules/yarn/lib/cli.js:62126:18)
+      at Request.self.callback (/usr/local/lib/node_modules/yarn/lib/cli.js:124482:22)
+      at emitTwo (events.js:126:13)
+      at Request.emit (events.js:214:7)
+      at Request.<anonymous> (/usr/local/lib/node_modules/yarn/lib/cli.js:125454:10)
+      at emitOne (events.js:116:13)
+      at Request.emit (events.js:211:7)
+      at IncomingMessage.<anonymous> (/usr/local/lib/node_modules/yarn/lib/cli.js:125376:12)
+      at Object.onceWrapper (events.js:313:30)
+      at emitNone (events.js:111:20)
+
+npm manifest: 
+  {
+    "name": "sturdy-authenticator",
+    "version": "1.0.0",
+    "main": "server.js",
+    "repository": "https://github.com/s-xync/sturdy-authenticator.git",
+    "author": "SaiKumar Immadi <immadisaikumar@ymail.com>",
+    "license": "MIT"
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
