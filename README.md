@@ -2,11 +2,18 @@
 
 This is pure backend REST API project with full authentication system.  
 
-You can access the live APIs [here](https://sturdy-authenticator.herokuapp.com).  
+You can access the APIs, live on this [public url](https://sturdy-authenticator.herokuapp.com).  
 
 The live version of the app uses _heroku_ for hosting the `express` app and _mlab_ for `mongoDB` database.  
 
-#### The below are the full HTTP requests and their corresponding screengrabs on Postman.
+The APIs validate inputs before processing them and return as necessary.  
+
+The session management in this authentication system follows the concept of Json Web Tokens. When the client logs in, server creates a JWT for the client which can be stored by client in the localStorage of the browser.
+
+### The below are the full HTTP requests and their corresponding screengrabs on Postman.
+
+#### NOTE: These HTTP requests on placed on the [public url](https://sturdy-authenticator.herokuapp.com) of the app that has been deployed on _heroku_. So, you can try them out yourself too.
+
 ***
 **Signup**  
 ```
@@ -86,6 +93,6 @@ Postman-Token: b4cc4f1a-91d8-4560-be45-6bcfd3dacdc8
 ![signup image](https://raw.githubusercontent.com/s-xync/sturdy-authenticator/master/showcase_images/6_resetpassword_hrg.png)  
 ***
 
-You can access the live APIs [here](https://sturdy-authenticator.herokuapp.com). 
+You can access the APIs, live on this [public url](https://sturdy-authenticator.herokuapp.com).  
 
 ## Thanks!
